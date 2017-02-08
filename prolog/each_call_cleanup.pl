@@ -10,11 +10,11 @@
 % Licience: LGPL
 % ===================================================================
 */
-
 :- module(each_call_cleanup,
    [
-      each_call_cleanup/3,             % +Setup, +Goal, +Cleanup
-      each_call_catcher_cleanup/4      % +Setup, +Goal, +Catcher, +Cleanup
+      redo_call_cleanup/3,             % +Setup, +Goal, +Cleanup
+      each_call_catcher_cleanup/4,     % +Setup, +Goal, ?Catcher, +Cleanup
+      each_call_cleanup/3              % +Setup, +Goal, +Cleanup      
     ]).
 
 /** <module> Each call cleanup
@@ -26,42 +26,20 @@ Call Setup Goal Cleanup *Each* Iteration
 */
 
 :- meta_predicate
-        each_call_cleanup(0,0,0),
-        each_call_catcher_cleanup(0,0,?,0),
-        each_call_cleanup0(*,0,*).
+  redo_call_cleanup(0,0,0),
+  each_call_catcher_cleanup(0,0,?,0),
+  each_call_cleanup(0,0,0).
+  
 
-
-% Writeq/1s a term the user_error and flushes
-:- if( \+ current_predicate(dmsg/1)).
-dmsg(M):-format(user_error,'~N % dmsg: ~q.~n',[M]),flush_output(user_error).
-:- export(dmsg/1).
-:- endif.
-
-
-%!  each_call_cleanup(:Setup, :Goal, :Cleanup).
-%!  each_call_catcher_cleanup(:Setup, :Goal, +Catcher, :Cleanup).
+%! redo_call_cleanup(:Setup, :Goal, :Cleanup).
 %
-%   Call Setup before Goal like normal but *also* before each Goal is redone.
-%   Also call Cleanup *each* time Goal is finished 
+% @warn Setup/Cleanup do not share variables.
+% If that is needed, use each_call_cleanup/3 
 
-each_call_cleanup(Setup,Goal,Cleanup):- 
- (ground(Setup);ground(Cleanup)),!,
-  each_call_cleanup0(Setup,Goal,Cleanup).
-
-each_call_cleanup(Setup,Goal,Cleanup):-
- setup_call_cleanup(
-   asserta(('$each_call_cleanup'(Setup):-Cleanup),HND), 
-   each_call_cleanup0(pt1(HND),Goal,pt2(HND)),
-   erase(HND)).
-
-:- dynamic('$each_call_cleanup'/1).
-:- dynamic('$each_call_undo'/2).
-
-pt1(HND) :- clause('$each_call_cleanup'(Setup),Cleanup,HND),call(Setup),asserta('$each_call_undo'(HND,Cleanup)).
-pt2(HND) :- retract('$each_call_undo'(HND,Cleanup))->call(Cleanup);true.
-
-each_call_cleanup0(Setup,Goal,Cleanup):-
-   \+ \+ '$sig_atomic'(Setup), 
+redo_call_cleanup(Setup,Goal,Cleanup):- 
+   must_be(ground,Setup),must_be(ground,Cleanup),
+   % \+ \+ 
+   '$sig_atomic'(Setup),
    catch( 
      ((Goal, deterministic(DET)),
        '$sig_atomic'(Cleanup),
@@ -71,23 +49,41 @@ each_call_cleanup0(Setup,Goal,Cleanup):-
       ('$sig_atomic'(Cleanup),throw(E))). 
 
 
+%! each_call_catcher_cleanup(:Setup, :Goal, +Catcher, :Cleanup).
+%
+%   Call Setup before Goal like normal but *also* before each Goal is redone.
+%   Also call Cleanup *each* time Goal is finished
+%  @bug Goal does not share variables with Setup/Cleanup Pairs
+
 each_call_catcher_cleanup(Setup, Goal, Catcher, Cleanup):-
    setup_call_catcher_cleanup(true, 
      each_call_cleanup(Setup, Goal, Cleanup), Catcher, true).
 
 
+%! each_call_cleanup(:Setup, :Goal, :Cleanup).
+%
+%   Call Setup before Goal like normal but *also* before each Goal is redone.
+%   Also call Cleanup *each* time Goal is finished
+%  @bug Goal does not share variables with Setup/Cleanup Pairs
 
+each_call_cleanup(Setup,Goal,Cleanup):- 
+ ((ground(Setup);ground(Cleanup)) -> 
+  redo_call_cleanup(Setup,Goal,Cleanup);
+  setup_call_cleanup(
+   asserta(('$each_call_cleanup'(Setup):-Cleanup),HND), 
+   redo_call_cleanup(pt1(HND),Goal,pt2(HND)),
+   erase(HND))).
 
+:- dynamic('$each_call_cleanup'/1).
+:- dynamic('$each_call_undo'/2).
 
-end_of_file.
+pt1(HND) :- 
+  clause('$each_call_cleanup'(Setup),Cleanup,HND),
+    call(Setup),
+      asserta('$each_call_undo'(HND,Cleanup)).
 
+pt2(HND) :- 
+  retract('$each_call_undo'(HND,Cleanup))
+    ->call(Cleanup);
+      true.
 
-each_call_cleanup(Setup,Goal,Cleanup):- fail,!,
-   '$sig_atomic'(Setup), 
-   catch( 
-     ((Goal, deterministic(DET)),
-       '$sig_atomic'(Cleanup),
-         (DET == true -> true
-          ; (true;('$sig_atomic'(Setup),fail)))), 
-      E, 
-      ('$sig_atomic'(Cleanup),throw(E))). 

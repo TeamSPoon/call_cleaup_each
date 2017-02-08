@@ -14,45 +14,37 @@
 Source code available and pull requests accepted at
 http://github.com/TeamSPoon/each_call_cleanup
 
+Example usages: 
+
 ```prolog
 
- / *Example usages: */ 
  
  with_prolog_flag(Flag,Value,Goal):- 
-       current_prolog_flag(Flag,Was), 
-       each_call_cleanup( 
-                   set_prolog_flag(Flag,Value), 
-                   Goal, 
-                   set_prolog_flag(Flag,Was)). 
+    (current_prolog_flag(Flag,Was)-> Cleanup = set_prolog_flag(Flag,Was); true),
+     each_call_cleanup( 
+	 set_prolog_flag(Flag,Value), 
+	  Goal, 
+	   Cleanup). 
  
  
 
  % notrace/1 that is not like once/1 
-  no_trace(Goal):- 
-     ( 
-     notrace((tracing,notrace)) 
-      - 
-    ('$leash'(OldL, OldL), 
-     '$visible'(OldV, OldV), 
-     each_call_cleanup( 
-         notrace((visible(-all),leash(-all), 
-              leash(+exception),visible(+exception))) 
-         Goal, 
-         notrace(('$leash'(_, OldL),'$visible'(_, OldV),trace)))) 
-    ; 
-    Goal). 
+ no_trace(Goal):- 
+    tracing ->
+      each_call_cleanup(notrace,Goal,trace);
+      Goal.
+    
             
  
+
  % Trace non interactively 
- with_trace_non_interactive(Goal):- 
-    (   tracing- Undo=trace ; Undo = notrace ), 
- 
-    '$leash'(OldL, OldL), 
-    '$visible'(OldV, OldV), 
+ rtrace(Goal):- 
+    ( tracing-> Undo=trace ; Undo = notrace ), 
+    '$leash'(OldL, OldL), '$visible'(OldV, OldV), 
     each_call_cleanup( 
-         notrace((visible(+all),leash(-all),leash(+exception),trace)), 
-         Goal, 
-         notrace(('$leash'(_, OldL),'$visible'(_, OldV),Undo))) 
+         (notrace,visible(+all),leash(-all),leash(+exception),trace), 
+         Goal,
+         (notrace,'$leash'(_, OldL),'$visible'(_, OldV),Undo)).
 
 
 ```
