@@ -90,4 +90,77 @@ pt2(HND) :-
 :- system:import(redo_call_cleanup/3).
 :- system:import(each_call_catcher_cleanup/4).
 
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+
+
+:- module(logicmoo_util_scce,
+          [ 
+            make_nb_setter/2,
+            make_nb_setter/4,
+            make_nb_setter5/5,
+            nb_setargs_1var/5,
+            nb_setargs_goals/5,
+            scce_orig/3,
+            scce_orig2/3,
+            scce_test/1,
+            scce_idea/3]).
+
+% :- include('logicmoo_util_header.pi').
+
+% :- '$set_source_module'(system).
+
+:- meta_predicate scce_orig(0,0,0).
+system:scce_orig(Setup,Goal,Cleanup):-
+  must_atomic(Setup),
+     catch((
+        call((Goal,deterministic(Det),true))
+        *->
+        (Det == true
+          -> (must_atomic(Cleanup),!)
+          ; (must_atomic(Cleanup);(must_atomic(Setup),fail)))
+     ; (must_atomic(Cleanup),!,fail)),
+     E, (ignore(must_atomic(Cleanup)),throw(E))).
+
+
+:- if(\+ current_predicate(must_atomic/1)).
+:- ensure_loaded(logicmoo_util_supp).
+:- endif.
+
+:- if(\+ current_predicate(system:nop/1)).
+:- system:ensure_loaded(system:logicmoo_util_supp).
+:- endif.
+
+
+:- meta_predicate scce_orig2(0,0,0).
+system:scce_orig2(Setup,Goal,Cleanup):- 
+  setup_call_cleanup(Setup, 
+    (call((Goal,deterministic(Det),true))
+       *-> (Det == true -> ! ; 
+        (once(Cleanup);(once(Setup),fail))) ; (!,fail)) ,Cleanup).
+
+make_nb_setter(Term,G):-make_nb_setter(Term,_Copy,nb_setarg,G).
+
+make_nb_setter(Term,Next,Pred,G):-
+ cnotrace((  copy_term(Term,Next),
+  term_variables(Term,Vs),
+  term_variables(Next,CVs),
+  make_nb_setter5(Vs,CVs,Pred,Term,G))).
+
+make_nb_setter5(Vs,CVs,Pred, Term,maplist(call,SubGs)):-
+       cnotrace(( maplist(nb_setargs_1var(Term,Pred), Vs,CVs, SubGs))).
+
+nb_setargs_1var(Term,Pred, X, Y, maplist(call,NBSetargClosure)):-
+        bagof(How, nb_setargs_goals(X,Y,Pred, Term,How),NBSetargClosure).
+
+nb_setargs_goals(X,Y,Pred, Term, How) :-
+        compound(Term),
+        arg(N, Term, Arg),
+        (Arg ==X -> How=call(Pred,N,Term,Y) ;
+           nb_setargs_goals(X,Y,Pred,Arg,How)).
+
 
