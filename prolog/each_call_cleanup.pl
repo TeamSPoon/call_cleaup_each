@@ -37,7 +37,7 @@ Call Setup Goal Cleanup *Each* Iteration
 % If that is needed, use each_call_cleanup/3 
 
 redo_call_cleanup(Setup,Goal,Cleanup):- 
-   must_be(ground,Setup),must_be(ground,Cleanup),
+   must_be(nonvar,Setup),must_be(nonvar,Cleanup),
    % \+ \+ 
    '$sig_atomic'(Setup),
    catch( 
@@ -72,18 +72,22 @@ each_call_cleanup(Setup,Goal,Cleanup):-
   setup_call_cleanup(
    asserta(('$each_call_cleanup'(Setup):-Cleanup),HND), 
    redo_call_cleanup(pt1(HND),Goal,pt2(HND)),
-   erase(HND))).
+   (pt2(HND),erase(HND)))).
 
 :- dynamic('$each_call_cleanup'/1).
 :- dynamic('$each_call_undo'/2).
 
 pt1(HND) :- 
-  clause('$each_call_cleanup'(Setup),Cleanup,HND),
-    call(Setup),
+  clause('$each_call_cleanup'(Setup),Cleanup,HND),!,
+    once(Setup),
       asserta('$each_call_undo'(HND,Cleanup)).
 
 pt2(HND) :- 
   retract('$each_call_undo'(HND,Cleanup))
-    ->call(Cleanup);
-      true.
+    ->once(Cleanup); true.
+
+:- system:import(each_call_cleanup/3).
+:- system:import(redo_call_cleanup/3).
+:- system:import(each_call_catcher_cleanup/4).
+
 
