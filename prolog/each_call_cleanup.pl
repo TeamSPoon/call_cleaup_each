@@ -112,7 +112,7 @@ end_of_file.
             scce_test/1,
             scce_idea/3]).
 
-% :- include('logicmoo_util_header.pi').
+% 
 :- set_module(class(library)).
 
 % :- '$set_source_module'(system).
