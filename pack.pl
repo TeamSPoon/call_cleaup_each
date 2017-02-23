@@ -1,7 +1,7 @@
 name(each_call_cleanup).
 title('Each Call Redo Setup and Cleanup').
 
-version('0.0.3').
+version('0.0.7').
 download('https://github.com/TeamSPoon/pack_each_call_cleanup/releases/*.zip').
 
 author( 'Douglas R. Miles', 'logicmoo@gmail.com' ).
