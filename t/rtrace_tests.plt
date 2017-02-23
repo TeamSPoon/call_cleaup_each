@@ -34,7 +34,7 @@ w0(REF,X):-
  nl,nl.
 
 
-% Could current predicates such as:   profile/1  cnotrace/1 with_output_to_*/2  PL_call()  (possibly ignore/1)  benefit as well like with_output_to/2 does?
+% Could current predicates such as:   profile/1  quietly/1 with_output_to_*/2  PL_call()  (possibly ignore/1)  benefit as well like with_output_to/2 does?
 
 % we wanted to code this
 :- meta_predicate with_output_to_scc(*,0).
@@ -128,7 +128,7 @@ setup2:-  nb_getval(in,IN),
 
 scce2(S0,G0,C0):-
  IN = v(S0,G0,C0),
- ((cnotrace((
+ ((quietly((
   nb_setval(orig,IN),
   nb_setval(blank_orig, BLANK_orig),  
   make_nb_setter(IN  , _, nb_setarg, BLANK_orig),
@@ -144,9 +144,9 @@ scce2(S0,G0,C0):-
   setup2(S0),
   ignore(call(call,C0)).
 
-cleanup2:- cnotrace(nb_getval(in,v(_,_,C))),call(C).
+cleanup2:- quietly(nb_getval(in,v(_,_,C))),call(C).
 setup2(S0):- 
-          cnotrace((nb_getval(in,IN),
+          quietly((nb_getval(in,IN),
 	  IN  =  v(S0,G0,C0),
 	  NX  =  v(S1,_G1,_C1),
 	  copy_term(IN,NX))),
@@ -168,8 +168,8 @@ scce1(S0,G0,C0):- !,
   copy_term(SGCVs,VC1), make_nb_setter5(SGCVs,VC1,nb_setarg,(S0+G0),UnsetSetup1),
   copy_term(SGCVs,VC2), make_nb_setter5(SGCVs,VC2,nb_setarg,(S0+G0),UnsetSetup2),
   S = call(S0),
-  G = (call(call,G0),cnotrace(UnsetSetup0)),
-  C = (call(call,C0),cnotrace(UnsetSetup1)),
+  G = (call(call,G0),quietly(UnsetSetup0)),
+  C = (call(call,C0),quietly(UnsetSetup1)),
      catch((
         call((once(S0),G,deterministic(Det),true))
         *->
@@ -200,17 +200,17 @@ scce1(S0,G0,C0):-
   call(C0).
 
   
-cleanup1:- cnotrace(nb_getval(in,v(_,_,C,_))),call(C).
+cleanup1:- quietly(nb_getval(in,v(_,_,C,_))),call(C).
 
 setup1(UnsetSetup,S0):-
-        cnotrace((
+        quietly((
 	  nb_getval(in,IN),
 	  IN  =  v(S0,G0,C0),
 	  NX  =  v(S1,_G1,_C1),
 	  copy_term(IN,NX))),
-	  cnotrace(call_gvar(blank_in)),	
+	  quietly(call_gvar(blank_in)),	
 	  once(S0),
-	  cnotrace(UnsetSetup),
+	  quietly(UnsetSetup),
 	  nb_setval(in,v(S1,G0,C0)).
 
 
@@ -306,13 +306,13 @@ scce3(S0,G0,C0):- fail,
 
 scce3(S0,G0,C0):- !,
 
- cnotrace(( S = call(call,S0),
+ quietly(( S = call(call,S0),
   G = call(call,G0),
   C = call(call,C0),
   UnSU = (UnS,nb_setarg(2,G,G0)),
   make_nb_setter(scce3(S,G,C),UnS))),
 
- cnotrace((
+ quietly((
 
   nb_setval(orig,IN),
   IN = v(S0,G0,C0),
@@ -365,7 +365,7 @@ create_undoer:-
 
 end_of_file.
 scce1(S0,G0,C0):-
- cnotrace((
+ quietly((
   nb_setval(orig,IN),
   nb_setval(blank_orig,BLANK_IN),  
     IN = v(S0,G0,C0),

@@ -7,7 +7,7 @@
 
   or
 
-    `?- pack_install('https://github.com/TeamSPoon/each_call_cleanup.git').`
+    `?- pack_install('https://github.com/TeamSPoon/pack_each_call_cleanup.git').`
 
 
 

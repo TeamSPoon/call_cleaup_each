@@ -60,6 +60,11 @@ each_call_catcher_cleanup(Setup, Goal, Catcher, Cleanup):-
      each_call_cleanup(Setup, Goal, Cleanup), Catcher, true).
 
 
+:- thread_local('$each_call_cleanup'/1).
+:- thread_local('$each_call_undo'/2).
+:- dynamic('$each_call_cleanup'/1).
+:- dynamic('$each_call_undo'/2).
+
 %! each_call_cleanup(:Setup, :Goal, :Cleanup).
 %
 %   Call Setup before Goal like normal but *also* before each Goal is redone.
@@ -73,9 +78,6 @@ each_call_cleanup(Setup,Goal,Cleanup):-
    asserta(('$each_call_cleanup'(Setup):-Cleanup),HND), 
    redo_call_cleanup(pt1(HND),Goal,pt2(HND)),
    (pt2(HND),erase(HND)))).
-
-:- dynamic('$each_call_cleanup'/1).
-:- dynamic('$each_call_undo'/2).
 
 pt1(HND) :- 
   clause('$each_call_cleanup'(Setup),Cleanup,HND),!,
@@ -111,6 +113,7 @@ end_of_file.
             scce_idea/3]).
 
 % :- include('logicmoo_util_header.pi').
+:- set_module(class(library)).
 
 % :- '$set_source_module'(system).
 
@@ -131,7 +134,7 @@ system:scce_orig(Setup,Goal,Cleanup):-
 :- ensure_loaded(logicmoo_util_supp).
 :- endif.
 
-:- if(\+ current_predicate(system:nop/1)).
+:- if(\+ current_predicate(nop/1)).
 :- system:ensure_loaded(system:logicmoo_util_supp).
 :- endif.
 
@@ -146,13 +149,13 @@ system:scce_orig2(Setup,Goal,Cleanup):-
 make_nb_setter(Term,G):-make_nb_setter(Term,_Copy,nb_setarg,G).
 
 make_nb_setter(Term,Next,Pred,G):-
- cnotrace((  copy_term(Term,Next),
+ quietly((  copy_term(Term,Next),
   term_variables(Term,Vs),
   term_variables(Next,CVs),
   make_nb_setter5(Vs,CVs,Pred,Term,G))).
 
 make_nb_setter5(Vs,CVs,Pred, Term,maplist(call,SubGs)):-
-       cnotrace(( maplist(nb_setargs_1var(Term,Pred), Vs,CVs, SubGs))).
+       quietly(( maplist(nb_setargs_1var(Term,Pred), Vs,CVs, SubGs))).
 
 nb_setargs_1var(Term,Pred, X, Y, maplist(call,NBSetargClosure)):-
         bagof(How, nb_setargs_goals(X,Y,Pred, Term,How),NBSetargClosure).
