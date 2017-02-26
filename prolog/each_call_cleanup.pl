@@ -118,7 +118,7 @@ end_of_file.
 % :- '$set_source_module'(system).
 
 :- meta_predicate scce_orig(0,0,0).
-system:scce_orig(Setup,Goal,Cleanup):-
+scce_orig(Setup,Goal,Cleanup):-
   must_atomic(Setup),
      catch((
         call((Goal,deterministic(Det),true))

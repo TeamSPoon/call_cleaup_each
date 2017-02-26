@@ -29,7 +29,7 @@ Example usages:
  
 
  % notrace/1 that is not like once/1 
- no_trace(Goal):- 
+ quietly(Goal):- 
     tracing ->
       each_call_cleanup(notrace,Goal,trace);
       Goal.
