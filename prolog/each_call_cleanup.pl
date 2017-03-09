@@ -100,6 +100,47 @@ end_of_file.
 end_of_file.
 
 
+
+
+
+
+
+
+
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+
+
+
+
+
+
+
+
+
+
+
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+end_of_file.
+
+
+
+
+
+
+
+
+
+
+
 :- module(logicmoo_util_scce,
           [ 
             make_nb_setter/2,
