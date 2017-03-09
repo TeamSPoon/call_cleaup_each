@@ -3,11 +3,7 @@
 
  Installation using SWI-Prolog 7.1 or later:
 
-    `?- pack_install(each_call_cleanup).`
-
-  or
-
-    `?- pack_install('https://github.com/TeamSPoon/each_call_cleanup.git').`
+   `?- pack_install('https://github.com/TeamSPoon/each_call_cleanup.git').`
 
 
 
