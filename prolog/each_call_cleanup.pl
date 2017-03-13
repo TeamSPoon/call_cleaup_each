@@ -1,20 +1,42 @@
-/* Part of LogicMOO Base Logicmoo Debug Tools
-% ===================================================================
-% File '$FILENAME.pl'
-% Purpose: An Implementation in SWI-Prolog of certain debugging tools
-% Maintainer: Douglas Miles
-% Contact: $Author: dmiles $@users.sourceforge.net ;
-% Version: '$FILENAME.pl' 1.0.0
-% Revision: $Revision: 1.1 $
-% Revised At:  $Date: 2002/07/11 21:57:28 $
-% Licience: LGPL
-% ===================================================================
+/* Part of SWI-Prolog
+
+    Author:        Douglas R. Miles, ...
+    E-mail:        logicmoo@gmail.com
+    WWW:           http://www.logicmoo.org
+    Copyright (c)  2016-2017, LogicMOO Basic Tools
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
 */
+
 :- module(each_call_cleanup,
    [
-      redo_call_cleanup/3,             % +Setup, +Goal, +Cleanup
+      each_call_cleanup/3,             % +Setup, +Goal, +Cleanup      
       each_call_catcher_cleanup/4,     % +Setup, +Goal, ?Catcher, +Cleanup
-      each_call_cleanup/3              % +Setup, +Goal, +Cleanup      
+      redo_call_cleanup/3              % +Setup, +Goal, +Cleanup
     ]).
 
 /** <module> Each call cleanup
@@ -29,6 +51,9 @@ Call Setup Goal Cleanup *Each* Iteration
   redo_call_cleanup(0,0,0),
   each_call_catcher_cleanup(0,0,?,0),
   each_call_cleanup(0,0,0).
+
+:- module_transparent(pt1/1).
+:- module_transparent(pt2/1).
   
 
 %! redo_call_cleanup(:Setup, :Goal, :Cleanup).
@@ -37,9 +62,8 @@ Call Setup Goal Cleanup *Each* Iteration
 % If that is needed, use each_call_cleanup/3 
 
 redo_call_cleanup(Setup,Goal,Cleanup):- 
-   must_be(nonvar,Setup),must_be(nonvar,Cleanup),
-   % \+ \+ 
-   '$sig_atomic'(Setup),
+   assertion(each_call_cleanup:unshared_vars(Setup,Goal,Cleanup)),  
+   \+ \+ '$sig_atomic'(Setup),
    catch( 
      ((Goal, deterministic(DET)),
        '$sig_atomic'(Cleanup),
@@ -59,11 +83,8 @@ each_call_catcher_cleanup(Setup, Goal, Catcher, Cleanup):-
    setup_call_catcher_cleanup(true, 
      each_call_cleanup(Setup, Goal, Cleanup), Catcher, true).
 
-
-:- thread_local('$each_call_cleanup'/1).
-:- thread_local('$each_call_undo'/2).
-:- dynamic('$each_call_cleanup'/1).
-:- dynamic('$each_call_undo'/2).
+:- thread_local(ecc:'$each_call_cleanup'/2).
+:- thread_local(ecc:'$each_call_undo'/2).
 
 %! each_call_cleanup(:Setup, :Goal, :Cleanup).
 %
@@ -75,136 +96,54 @@ each_call_cleanup(Setup,Goal,Cleanup):-
  ((ground(Setup);ground(Cleanup)) -> 
   redo_call_cleanup(Setup,Goal,Cleanup);
   setup_call_cleanup(
-   asserta(('$each_call_cleanup'(Setup):-Cleanup),HND), 
+   asserta((ecc:'$each_call_cleanup'(Setup,Cleanup)),HND), 
    redo_call_cleanup(pt1(HND),Goal,pt2(HND)),
    (pt2(HND),erase(HND)))).
 
+ 		 /*******************************
+		 *	  UTILITIES		*
+		 *******************************/
+
+ecc:throw_failure(Why):- throw(error(assertion_error(Why),_)).
+
 pt1(HND) :- 
-  clause('$each_call_cleanup'(Setup),Cleanup,HND),!,
-    once(Setup),
-      asserta('$each_call_undo'(HND,Cleanup)).
+   clause(ecc:'$each_call_cleanup'(Setup,Cleanup),true,HND) 
+   ->
+   ('$sig_atomic'(Setup) -> 
+     asserta(ecc:'$each_call_undo'(HND,Cleanup)) ; 
+       ecc:throw_failure(failed_setup(Setup)))
+   ; 
+   ecc:throw_failure(pt1(HND)).
 
 pt2(HND) :- 
-  retract('$each_call_undo'(HND,Cleanup))
-    ->once(Cleanup); true.
+  retract(ecc:'$each_call_undo'(HND,Cleanup)) ->
+    ('$sig_atomic'(Cleanup)->true ;ecc:throw_failure(failed_cleanup(Cleanup)));
+      ecc:throw_failure(failed('$each_call_undo'(HND))).
 
+:- if(true).
 :- system:import(each_call_cleanup/3).
-:- system:import(redo_call_cleanup/3).
 :- system:import(each_call_catcher_cleanup/4).
-
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-
-
-
-
-
-
-
-
-
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-
-
-
-
-
-
-
-
-
-
-
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-end_of_file.
-
-
-
-
-
-
-
-
-
-
-
-:- module(logicmoo_util_scce,
-          [ 
-            make_nb_setter/2,
-            make_nb_setter/4,
-            make_nb_setter5/5,
-            nb_setargs_1var/5,
-            nb_setargs_goals/5,
-            scce_orig/3,
-            scce_orig2/3,
-            scce_test/1,
-            scce_idea/3]).
-
-% 
-:- set_module(class(library)).
-
-% :- '$set_source_module'(system).
-
-:- meta_predicate scce_orig(0,0,0).
-scce_orig(Setup,Goal,Cleanup):-
-  must_atomic(Setup),
-     catch((
-        call((Goal,deterministic(Det),true))
-        *->
-        (Det == true
-          -> (must_atomic(Cleanup),!)
-          ; (must_atomic(Cleanup);(must_atomic(Setup),fail)))
-     ; (must_atomic(Cleanup),!,fail)),
-     E, (ignore(must_atomic(Cleanup)),throw(E))).
-
-
-:- if(\+ current_predicate(must_atomic/1)).
-:- ensure_loaded(logicmoo_util_supp).
+:- system:import(redo_call_cleanup/3).
+:- system:import(pt1/1).
+:- system:import(pt2/1).
 :- endif.
 
-:- if(\+ current_predicate(nop/1)).
-:- system:ensure_loaded(system:logicmoo_util_supp).
-:- endif.
+% Only checks for shared vars (not shared structures)
+% @TODO what if someone got tricky with setarging?
+unshared_vars(Setup,Goal,Cleanup):- 
+   term_variables(Setup,SVs),
+   term_variables(Cleanup,CVs),
+   ( CVs==[] -> true; unshared_set(SVs,CVs)),
+   term_variables(Goal,GVs),
+   ( GVs==[] -> true; 
+     (unshared_set(SVs,GVs),
+      unshared_set(CVs,GVs))).
 
+unshared_set([],_).
+unshared_set([E1|Set1],Set2):- 
+   not_in_identical(E1,Set2),
+   unshared_set(Set1,Set2).
 
-:- meta_predicate scce_orig2(0,0,0).
-system:scce_orig2(Setup,Goal,Cleanup):- 
-  setup_call_cleanup(Setup, 
-    (call((Goal,deterministic(Det),true))
-       *-> (Det == true -> ! ; 
-        (once(Cleanup);(once(Setup),fail))) ; (!,fail)) ,Cleanup).
-
-make_nb_setter(Term,G):-make_nb_setter(Term,_Copy,nb_setarg,G).
-
-make_nb_setter(Term,Next,Pred,G):-
- quietly((  copy_term(Term,Next),
-  term_variables(Term,Vs),
-  term_variables(Next,CVs),
-  make_nb_setter5(Vs,CVs,Pred,Term,G))).
-
-make_nb_setter5(Vs,CVs,Pred, Term,maplist(call,SubGs)):-
-       quietly(( maplist(nb_setargs_1var(Term,Pred), Vs,CVs, SubGs))).
-
-nb_setargs_1var(Term,Pred, X, Y, maplist(call,NBSetargClosure)):-
-        bagof(How, nb_setargs_goals(X,Y,Pred, Term,How),NBSetargClosure).
-
-nb_setargs_goals(X,Y,Pred, Term, How) :-
-        compound(Term),
-        arg(N, Term, Arg),
-        (Arg ==X -> How=call(Pred,N,Term,Y) ;
-           nb_setargs_goals(X,Y,Pred,Arg,How)).
+not_in_identical(X, [Y|Ys]) :- X \== Y, not_in_identical(X, Ys).
 
 
