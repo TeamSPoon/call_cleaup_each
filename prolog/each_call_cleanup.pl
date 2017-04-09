@@ -130,6 +130,7 @@ pt2(HND) :-
 
 % Only checks for shared vars (not shared structures)
 % @TODO what if someone got tricky with setarging?
+unshared_vars(Setup,_,_):- ground(Setup),!.
 unshared_vars(Setup,Goal,Cleanup):- 
    term_variables(Setup,SVs),
    term_variables(Cleanup,CVs),
