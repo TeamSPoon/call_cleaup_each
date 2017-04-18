@@ -36,7 +36,8 @@
    [
       each_call_cleanup/3,             % +Setup, +Goal, +Cleanup      
       each_call_catcher_cleanup/4,     % +Setup, +Goal, ?Catcher, +Cleanup
-      redo_call_cleanup/3              % +Setup, +Goal, +Cleanup
+      redo_call_cleanup/3,             % +Setup, +Goal, +Cleanup
+      trusted_redo_call_cleanup/3      % +Setup, +Goal, +Cleanup
     ]).
 
 /** <module> Each call cleanup
@@ -50,7 +51,9 @@ Call Setup Goal Cleanup *Each* Iteration
 :- meta_predicate
   redo_call_cleanup(0,0,0),
   each_call_catcher_cleanup(0,0,?,0),
-  each_call_cleanup(0,0,0).
+  each_call_cleanup(0,0,0),
+  trusted_redo_call_cleanup(0,0,0).
+  
 
 :- module_transparent(pt1/1).
 :- module_transparent(pt2/1).
@@ -62,7 +65,10 @@ Call Setup Goal Cleanup *Each* Iteration
 % If that is needed, use each_call_cleanup/3 
 
 redo_call_cleanup(Setup,Goal,Cleanup):- 
-   assertion(each_call_cleanup:unshared_vars(Setup,Goal,Cleanup)),  
+   assertion(each_call_cleanup:unshared_vars(Setup,Goal,Cleanup)),
+   trusted_redo_call_cleanup(Setup,Goal,Cleanup).
+
+trusted_redo_call_cleanup(Setup,Goal,Cleanup):- 
    \+ \+ '$sig_atomic'(Setup),
    catch( 
      ((Goal, deterministic(DET)),
@@ -71,7 +77,6 @@ redo_call_cleanup(Setup,Goal,Cleanup):-
           ; (true;('$sig_atomic'(Setup),fail)))), 
       E, 
       ('$sig_atomic'(Cleanup),throw(E))). 
-
 
 %! each_call_catcher_cleanup(:Setup, :Goal, +Catcher, :Cleanup).
 %
@@ -94,10 +99,10 @@ each_call_catcher_cleanup(Setup, Goal, Catcher, Cleanup):-
 
 each_call_cleanup(Setup,Goal,Cleanup):- 
  ((ground(Setup);ground(Cleanup)) -> 
-  redo_call_cleanup(Setup,Goal,Cleanup);
+  trusted_redo_call_cleanup(Setup,Goal,Cleanup);
   setup_call_cleanup(
    asserta((ecc:'$each_call_cleanup'(Setup,Cleanup)),HND), 
-   redo_call_cleanup(pt1(HND),Goal,pt2(HND)),
+   trusted_redo_call_cleanup(pt1(HND),Goal,pt2(HND)),
    (pt2(HND),erase(HND)))).
 
  		 /*******************************
