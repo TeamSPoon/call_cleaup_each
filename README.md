@@ -16,11 +16,11 @@ Example usages:
 
  
  with_prolog_flag(Flag,Value,Goal):- 
-    (current_prolog_flag(Flag,Was)-> Cleanup = set_prolog_flag(Flag,Was); true),
+    current_prolog_flag(Flag,Was),
      each_call_cleanup( 
 	 set_prolog_flag(Flag,Value), 
 	  Goal, 
-	   Cleanup). 
+	   set_prolog_flag(Flag,Was)). 
  
  
 
