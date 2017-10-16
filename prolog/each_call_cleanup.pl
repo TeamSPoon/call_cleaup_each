@@ -12,7 +12,7 @@
 
     1. Redistributions of source code must retain the above copyright
        notice, this list of conditions and the following disclaimer.
-
+                   
     2. Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in
        the documentation and/or other materials provided with the
@@ -53,7 +53,19 @@ Call Setup Goal Cleanup *Each* Iteration
   each_call_catcher_cleanup(0,0,?,0),
   each_call_cleanup(0,0,0),
   trusted_redo_call_cleanup(0,0,0).
-  
+
+
+
+% call_then_cut(G):- call((G,(deterministic(true)->!;true)))
+
+call_then_cut(G):- 
+  prolog_current_choice(CP),  
+  prolog_choice_attribute(CP,parent,PC),
+  prolog_choice_attribute(PC,frame,Frame),prolog_frame_attribute(Frame,goal,PG),
+     prolog_choice_attribute(CP,frame,CFrame),prolog_frame_attribute(CFrame,goal,CG),dmsg(call_then_cut(PG,CG)),
+  call((G,(deterministic(true)->prolog_cut_to(PC);true))).
+
+
 
 :- module_transparent(pt1/1).
 :- module_transparent(pt2/1).
