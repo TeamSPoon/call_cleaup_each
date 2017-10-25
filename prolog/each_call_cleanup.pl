@@ -50,6 +50,7 @@ Call Setup Goal Cleanup *Each* Iteration
 
 :- meta_predicate
   redo_call_cleanup(0,0,0),
+  call_then_cut(0),
   each_call_catcher_cleanup(0,0,?,0),
   each_call_cleanup(0,0,0),
   trusted_redo_call_cleanup(0,0,0).
