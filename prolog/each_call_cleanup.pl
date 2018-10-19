@@ -63,7 +63,7 @@ call_then_cut(G):-
   prolog_current_choice(CP),  
   prolog_choice_attribute(CP,parent,PC),
   prolog_choice_attribute(PC,frame,Frame),prolog_frame_attribute(Frame,goal,PG),
-     prolog_choice_attribute(CP,frame,CFrame),prolog_frame_attribute(CFrame,goal,CG),dmsg(call_then_cut(PG,CG)),
+     prolog_choice_attribute(CP,frame,CFrame),prolog_frame_attribute(CFrame,goal,CG),nop(dmsg(call_then_cut(PG,CG))),
   call((G,(deterministic(true)->prolog_cut_to(PC);true))).
 
 
